@@ -1,0 +1,27 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model PowerEvent {
+  id        Int      @id @default(autoincrement())
+  // "button" = physical case button pass-through, "remote" = triggered via POST /power
+  source    String
+  // Relay hold time in ms. For button events this is left null (duration is
+  // however long the button was actually held, tracked by press/release pairs).
+  holdMs    Int?
+  // For button events: true = press, false = release. Null for remote events.
+  pressed   Boolean?
+  ok        Boolean  @default(true)
+  error     String?
+  createdAt DateTime @default(now())
+}

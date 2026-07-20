@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Archivo Black", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+  --animate-glow: glow 2.6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(350%) skewX(-12deg);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-neutral-950 text-neutral-100 antialiased;
+  font-family: var(--font-sans);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -11px -11px;
+}
+
+/* Smooth, non-blinking transitions for anything that changes state */
+.state-transition {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 500ms;
+  transition-timing-function: ease;
+}

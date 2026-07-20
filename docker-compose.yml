@@ -1,0 +1,25 @@
+services:
+  powerr-server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: powerr-server
+    restart: unless-stopped
+    env_file:
+      - server/.env
+    environment:
+      PORT: "80"
+      DATABASE_URL: "file:/app/data/prod.db"
+    volumes:
+      - powerr_data:/app/data
+    networks:
+      dragon:
+        aliases:
+          - powerr
+
+networks:
+  dragon:
+    external: true
+
+volumes:
+  powerr_data:
