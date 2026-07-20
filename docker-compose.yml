@@ -5,11 +5,11 @@ services:
       dockerfile: server/Dockerfile
     container_name: powerr-server
     restart: unless-stopped
-    env_file:
-      - server/.env
     environment:
       PORT: "80"
       DATABASE_URL: "file:/app/data/prod.db"
+      AUTH_TOKEN: ${AUTH_TOKEN}
+      UI_PASSWORD: ${UI_PASSWORD}
     volumes:
       - powerr_data:/app/data
     networks:
