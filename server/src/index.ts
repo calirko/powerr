@@ -26,6 +26,7 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 const MIN_HOLD_MS = 50;
 const MAX_HOLD_MS = 10_000;
 const DEFAULT_HOLD_MS = 500;
+const FORCE_HOLD_MS = 8_000;
 const POWER_COOLDOWN_MS = 5_000;
 let lastPowerTriggerAt = 0;
 
@@ -84,7 +85,9 @@ app.post("/power", async (c) => {
   }
 
   const rawHoldMs = (body as Record<string, unknown>)?.holdMs;
-  let holdMs = DEFAULT_HOLD_MS;
+  const rawMode = (body as Record<string, unknown>)?.mode;
+  const mode = rawMode === "force" ? "force" : "standard";
+  let holdMs = mode === "force" ? FORCE_HOLD_MS : DEFAULT_HOLD_MS;
   if (rawHoldMs !== undefined) {
     const parsed = Number(rawHoldMs);
     if (!Number.isFinite(parsed)) {
@@ -116,7 +119,7 @@ app.post("/power", async (c) => {
     return c.json({ error: result.error ?? "unknown error" }, 502);
   }
 
-  return c.json({ ok: true, holdMs });
+  return c.json({ ok: true, holdMs, mode });
 });
 
 app.get(

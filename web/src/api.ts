@@ -7,16 +7,18 @@ export class ApiError extends Error {
   }
 }
 
+export type PowerMode = "standard" | "force";
+
 export function statusWsUrl(): string {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${protocol}//${window.location.host}/ws/status`;
 }
 
-export async function triggerPower(holdMs: number): Promise<void> {
+export async function triggerPower(holdMs: number, mode: PowerMode = "standard"): Promise<void> {
   const res = await fetch("/power", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ holdMs }),
+    body: JSON.stringify({ holdMs, mode }),
   });
 
   if (res.status === 401) {
