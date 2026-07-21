@@ -31,9 +31,9 @@ function StatusDot({ state }: { state: DotState }) {
 
   return (
     <span className="relative flex h-2 w-2 items-center justify-center">
-      {state === "on" && <span className="animate-glow absolute h-2 w-2 rounded-full bg-emerald-400 blur-[3px]" />}
-      {state === "unknown" && <span className="absolute h-2 w-2 animate-pulse rounded-full bg-amber-400/50" />}
-      <span className={`state-transition relative h-2 w-2 rounded-full ${color}`} />
+      {state === "on" && <span className="animate-glow absolute h-2 w-2 rounded-xl bg-emerald-400 blur-[3px]" />}
+      {state === "unknown" && <span className="absolute h-2 w-2 animate-pulse rounded-xl bg-amber-400/50" />}
+      <span className={`state-transition relative h-2 w-2 rounded-xl ${color}`} />
     </span>
   );
 }
@@ -108,31 +108,34 @@ export default function PowerPage() {
       <button
         onClick={handlePress}
         disabled={pending || !status.connected}
-        className={`state-transition group relative flex h-40 w-40 items-center justify-center rounded-full ${
-          !pending && !status.connected ? "opacity-40" : "opacity-100"
-        }`}
+        className="state-transition group relative flex h-40 w-40 items-center justify-center rounded-lg"
+        type="button"
       >
         {/* ambient glow behind the button */}
         <span
-          className={`state-transition absolute inset-0 -z-10 rounded-full blur-2xl ${
+          className={`state-transition absolute inset-0 -z-10 rounded-lg blur-2xl ${
             status.connected ? "bg-indigo-500/30" : "bg-neutral-700/10"
           }`}
         />
 
         {/* button body */}
         <span
-          className={`state-transition absolute inset-0 rounded-full border bg-gradient-to-b from-neutral-800 to-neutral-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_8px_24px_rgba(0,0,0,0.5)] group-active:scale-95 ${
-            status.connected ? "border-indigo-400/40" : "border-neutral-800"
+          className={`state-transition absolute inset-0 rounded-lg border bg-gradient-to-b shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_8px_24px_rgba(0,0,0,0.5)] group-active:scale-95 ${
+            status.connected
+              ? "border-indigo-400/40 from-neutral-800 to-neutral-900"
+              : "border-neutral-800 from-neutral-900 to-neutral-950"
           }`}
         />
 
         {pending && (
-          <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
-            <span className="animate-shimmer absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
-          </span>
+          <span className="animate-shimmer pointer-events-none absolute inset-y-0 left-0 w-1/2 rounded-lg bg-gradient-to-r from-transparent via-white/25 to-transparent" />
         )}
 
-        <span className="relative z-10 flex flex-col items-center gap-2 text-neutral-100">
+        <span
+          className={`state-transition relative z-10 flex flex-col items-center gap-2 ${
+            !pending && !status.connected ? "text-neutral-600" : "text-neutral-100"
+          }`}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"

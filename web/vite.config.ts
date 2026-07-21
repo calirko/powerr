@@ -11,10 +11,10 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/status": "http://localhost:3000",
-      "/power": "http://localhost:3000",
-      "/login": "http://localhost:3000",
-      "/ws": { target: "ws://localhost:3000", ws: true },
+      "/status": "http://localhost:3050",
+      "/power": "http://localhost:3050",
+      "/login": "http://localhost:3050",
+      "/ws": { target: "ws://localhost:3050", ws: true },
     },
   },
 });

@@ -31,7 +31,7 @@ and curl against a running `bun run src/index.ts` instance (see conversation his
 ### web/ (Vite + React + Tailwind v4)
 ```
 bun install
-bun run dev      # vite dev server, proxies /status, /power, /login, /ws to localhost:3000
+bun run dev      # vite dev server, proxies /status, /power, /login, /ws to localhost:3050
 bun run build    # tsc -b && vite build — outputs directly into ../server/public
 bun run lint     # oxlint
 ```
@@ -95,5 +95,5 @@ building.
 - Tailwind v4 is configured CSS-first (no `tailwind.config.js`) — theme tokens (fonts, custom `shimmer` animation)
   live in `@theme`/`@keyframes` blocks in `src/index.css`.
 - `vite.config.ts` sets `build.outDir` to `../server/public` and proxies `/status`, `/power`, `/login`, `/ws` to
-  `localhost:3000` in dev — the frontend is meant to be built and served by the Bun server, not run standalone in
+  `localhost:3050` in dev — the frontend is meant to be built and served by the Bun server, not run standalone in
   production.
