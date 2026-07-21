@@ -24,6 +24,10 @@ volatile bool pcPoweredOn = false;
 bool haveReportedPc = false;
 bool reportedPcPoweredOn = false;
 
+bool haveReportedGpio = false;
+bool reportedLedOn = false;
+bool reportedHddLedOn = false;
+
 // Remote (server-issued) relay pulse, tracked non-blocking so it can run
 // alongside continuous button mirroring.
 bool remotePulseActive = false;
@@ -40,6 +44,16 @@ void setRelay(bool energized) {
 bool readButtonPressed() {
   int level = digitalRead(BUTTON_PIN);
   return BUTTON_ACTIVE_LOW ? (level == LOW) : (level == HIGH);
+}
+
+bool readLedOn() {
+  int level = digitalRead(LED_PIN);
+  return LED_ACTIVE_LOW ? (level == LOW) : (level == HIGH);
+}
+
+bool readHddLedOn() {
+  int level = digitalRead(HDD_LED_PIN);
+  return HDD_LED_ACTIVE_LOW ? (level == LOW) : (level == HIGH);
 }
 
 void sendAck(const String &id, bool ok, const char *error = nullptr) {
@@ -68,6 +82,16 @@ void reportPcStatus(bool poweredOn) {
   JsonDocument doc;
   doc["type"] = "pc_status";
   doc["poweredOn"] = poweredOn;
+  String out;
+  serializeJson(doc, out);
+  webSocket.sendTXT(out);
+}
+
+void reportGpioStatus(bool ledOn, bool hddLedOn) {
+  JsonDocument doc;
+  doc["type"] = "gpio_status";
+  doc["ledOn"] = ledOn;
+  doc["hddLedOn"] = hddLedOn;
   String out;
   serializeJson(doc, out);
   webSocket.sendTXT(out);
@@ -118,6 +142,22 @@ void syncPcStatus() {
   }
 }
 
+void syncGpioStatus() {
+  if (!webSocket.isConnected()) {
+    return;
+  }
+
+  bool ledOn = readLedOn();
+  bool hddLedOn = readHddLedOn();
+
+  if (!haveReportedGpio || ledOn != reportedLedOn || hddLedOn != reportedHddLedOn) {
+    haveReportedGpio = true;
+    reportedLedOn = ledOn;
+    reportedHddLedOn = hddLedOn;
+    reportGpioStatus(ledOn, hddLedOn);
+  }
+}
+
 void handleMessage(uint8_t *payload, size_t length) {
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, payload, length);
@@ -151,10 +191,12 @@ void onWebSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
       // Force a resend of the current PC state on (re)connect; syncPcStatus()
       // picks it up on the next loop iteration once isConnected() is true.
       haveReportedPc = false;
+      haveReportedGpio = false;
       break;
     case WStype_DISCONNECTED:
       Serial.println("websocket disconnected");
       haveReportedPc = false;
+      haveReportedGpio = false;
       break;
     case WStype_TEXT:
       handleMessage(payload, length);
@@ -183,6 +225,9 @@ void setup() {
 
   pinMode(BUTTON_PIN, BUTTON_ACTIVE_LOW ? INPUT_PULLUP : INPUT);
   lastButtonPressed = readButtonPressed();
+
+  pinMode(LED_PIN, LED_ACTIVE_LOW ? INPUT_PULLUP : INPUT);
+  pinMode(HDD_LED_PIN, HDD_LED_ACTIVE_LOW ? INPUT_PULLUP : INPUT);
 
   pcHostIp.fromString(PC_HOST_IP);
 
@@ -224,6 +269,7 @@ void loop() {
   setRelay(buttonPressed || remotePulseActive);
 
   syncPcStatus();
+  syncGpioStatus();
 
   unsigned long now = millis();
   if (now - lastHeartbeatAt >= HEARTBEAT_INTERVAL_MS) {

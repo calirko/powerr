@@ -15,6 +15,16 @@
 // Typical wiring: button to GND with internal pull-up, so pressed == LOW.
 #define BUTTON_ACTIVE_LOW true
 
+// GPIO reading the chassis LED status line.
+#define LED_PIN 25
+// Many case LEDs are active-low, so keep the polarity configurable.
+#define LED_ACTIVE_LOW true
+
+// GPIO reading the HDD activity LED status line.
+#define HDD_LED_PIN 33
+// Many case HDD LEDs are active-low, so keep the polarity configurable.
+#define HDD_LED_ACTIVE_LOW true
+
 #define WS_PATH "/ws"
 
 // How often we ping the server so it can tell we're still alive.

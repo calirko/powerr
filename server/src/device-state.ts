@@ -20,6 +20,8 @@ class DeviceState {
   private statusSubscribers = new Set<ServerWebSocket<unknown>>();
   private lastBroadcastConnected = false;
   private pcPoweredOn: boolean | null = null;
+  private ledOn: boolean | null = null;
+  private hddLedOn: boolean | null = null;
 
   constructor() {
     setInterval(() => this.checkStaleness(), STALE_CHECK_INTERVAL_MS);
@@ -37,6 +39,8 @@ class DeviceState {
       this.socket = null;
       // No longer trustworthy once the device that was probing it is gone.
       this.pcPoweredOn = null;
+      this.ledOn = null;
+      this.hddLedOn = null;
     }
     this.broadcastStatus();
   }
@@ -71,6 +75,8 @@ class DeviceState {
       connected: this.socket !== null && !stale,
       lastSeenAt: this.lastSeen ? new Date(this.lastSeen).toISOString() : null,
       pcPoweredOn: this.pcPoweredOn,
+      ledOn: this.ledOn,
+      hddLedOn: this.hddLedOn,
     };
   }
 
@@ -86,13 +92,10 @@ class DeviceState {
       return;
     }
 
-    const wasConnected = this.getStatus().connected;
     this.lastSeen = Date.now();
-    if (!wasConnected) {
-      this.broadcastStatus();
-    }
 
     if (msg.type === "ping") {
+      this.broadcastStatus();
       this.socket?.send(JSON.stringify({ type: "pong" } satisfies ServerToDeviceMessage));
       return;
     }
@@ -117,9 +120,17 @@ class DeviceState {
     if (msg.type === "pc_status") {
       if (msg.poweredOn !== this.pcPoweredOn) {
         this.pcPoweredOn = msg.poweredOn;
-        this.broadcastStatus();
       }
     }
+
+    if (msg.type === "gpio_status") {
+      if (msg.ledOn !== this.ledOn || msg.hddLedOn !== this.hddLedOn) {
+        this.ledOn = msg.ledOn;
+        this.hddLedOn = msg.hddLedOn;
+      }
+    }
+
+    this.broadcastStatus();
   }
 
   /** Sends a power command to the device and waits for an ack (or times out). */

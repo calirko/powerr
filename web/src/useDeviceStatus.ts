@@ -7,6 +7,10 @@ export type DeviceStatus = {
   // Whether the PC itself (probed by the ESP32 over the LAN) is powered on.
   // null until the firmware reports its first reading.
   pcPoweredOn: boolean | null;
+  // Current chassis LED state as sampled by the firmware.
+  ledOn: boolean | null;
+  // Current HDD activity LED state as sampled by the firmware.
+  hddLedOn: boolean | null;
 };
 
 type StatusMessage = { type: "status" } & DeviceStatus;
@@ -14,7 +18,13 @@ type StatusMessage = { type: "status" } & DeviceStatus;
 const RECONNECT_DELAY_MS = 2000;
 
 export function useDeviceStatus(): DeviceStatus {
-  const [status, setStatus] = useState<DeviceStatus>({ connected: false, lastSeenAt: null, pcPoweredOn: null });
+  const [status, setStatus] = useState<DeviceStatus>({
+    connected: false,
+    lastSeenAt: null,
+    pcPoweredOn: null,
+    ledOn: null,
+    hddLedOn: null,
+  });
 
   useEffect(() => {
     let socket: WebSocket | null = null;
@@ -27,7 +37,13 @@ export function useDeviceStatus(): DeviceStatus {
       socket.onmessage = (event) => {
         const msg = JSON.parse(event.data) as StatusMessage;
         if (msg.type === "status") {
-          setStatus({ connected: msg.connected, lastSeenAt: msg.lastSeenAt, pcPoweredOn: msg.pcPoweredOn });
+          setStatus({
+            connected: msg.connected,
+            lastSeenAt: msg.lastSeenAt,
+            pcPoweredOn: msg.pcPoweredOn,
+            ledOn: msg.ledOn,
+            hddLedOn: msg.hddLedOn,
+          });
         }
       };
 

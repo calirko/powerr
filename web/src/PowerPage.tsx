@@ -7,6 +7,24 @@ const DEFAULT_ERROR_SECONDS = 4;
 
 type DotState = "on" | "off" | "unknown";
 
+type StatusRowProps = {
+  label: string;
+  state: DotState;
+  detail: string;
+};
+
+function StatusRow({ label, state, detail }: StatusRowProps) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/5 px-4 py-3 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] backdrop-blur-sm">
+      <StatusDot state={state} />
+      <div className="min-w-0">
+        <p className="font-display text-sm tracking-wide text-neutral-100">{label}</p>
+        <p className="text-xs text-neutral-400">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
 function StatusDot({ state }: { state: DotState }) {
   const color =
     state === "on" ? "bg-emerald-400" : state === "off" ? "bg-rose-500/70" : "bg-amber-400/70";
@@ -57,23 +75,34 @@ export default function PowerPage() {
   }
 
   const pcState: DotState = status.pcPoweredOn === null ? "unknown" : status.pcPoweredOn ? "on" : "off";
+  const ledState: DotState = status.ledOn === null ? "unknown" : status.ledOn ? "on" : "off";
+  const hddLedState: DotState = status.hddLedOn === null ? "unknown" : status.hddLedOn ? "on" : "off";
   const espState: DotState = status.connected ? "on" : "off";
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-10 p-4">
-      <h1 className="font-display text-2xl tracking-tight">powerr</h1>
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-8 p-4 text-neutral-100">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <h1 className="font-display text-2xl tracking-tight">powerr</h1>
+        <p className="max-w-md text-sm text-neutral-500">Realtime device, ping, and front-panel indicator status.</p>
+      </div>
 
-      <div className="flex flex-col items-center gap-2 text-sm text-neutral-500">
-        <div className="flex items-center gap-2">
-          <StatusDot state={espState} />
-          <span className="state-transition">ESP32 {status.connected ? "connected" : "disconnected"}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <StatusDot state={pcState} />
-          <span className="state-transition">
-            PC {status.pcPoweredOn === null ? "unknown" : status.pcPoweredOn ? "on" : "off"}
-          </span>
-        </div>
+      <div className="grid w-full max-w-md gap-3 sm:grid-cols-2">
+        <StatusRow label="ESP32 link" state={espState} detail={status.connected ? "connected to server" : "offline"} />
+        <StatusRow
+          label="IP ping status"
+          state={pcState}
+          detail={status.pcPoweredOn === null ? "waiting for first ping" : status.pcPoweredOn ? "responding" : "no response"}
+        />
+        <StatusRow
+          label="LED status"
+          state={ledState}
+          detail={status.ledOn === null ? "waiting for first sample" : status.ledOn ? "on" : "off"}
+        />
+        <StatusRow
+          label="HDD LED status"
+          state={hddLedState}
+          detail={status.hddLedOn === null ? "waiting for first sample" : status.hddLedOn ? "on" : "off"}
+        />
       </div>
 
       <button
