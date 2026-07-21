@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
-import { ApiError, triggerPower } from "./api";
+import { useEffect, useMemo, useState } from "react";
+import { ApiError, fetchPowerLogs, triggerPower, type PowerEventLog } from "./api";
 import { useDeviceStatus } from "./useDeviceStatus";
 import {
   dangerButtonClass,
+  dialogBackdropClass,
+  dialogShellClass,
   frameClass,
   pageShellClass,
   panelClass,
+  secondaryButtonClass,
   subtitleClass,
   titleClass,
 } from "./ui";
@@ -16,6 +19,7 @@ const DEFAULT_ERROR_SECONDS = 4;
 
 type DotState = "on" | "off" | "unknown";
 type PowerMode = "standard" | "force";
+type LogFilter = "all" | "remote" | "button";
 
 type StatusRowProps = {
   label: string;
@@ -125,11 +129,137 @@ function PowerActionButton({
   );
 }
 
+function LogBadge({ children, tone = "neutral" }: { children: string; tone?: "neutral" | "green" | "amber" | "red" }) {
+  const toneClass =
+    tone === "green"
+      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-100"
+      : tone === "amber"
+        ? "border-amber-400/20 bg-amber-400/10 text-amber-100"
+        : tone === "red"
+          ? "border-rose-400/20 bg-rose-400/10 text-rose-100"
+          : "border-white/10 bg-white/5 text-neutral-300";
+
+  return <span className={`rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] ${toneClass}`}>{children}</span>;
+}
+
+function LogsDialog({
+  open,
+  onClose,
+  logs,
+  loading,
+  error,
+  filter,
+  onFilterChange,
+}: {
+  open: boolean;
+  onClose: () => void;
+  logs: PowerEventLog[];
+  loading: boolean;
+  error: string | null;
+  filter: LogFilter;
+  onFilterChange: (value: LogFilter) => void;
+}) {
+  const filteredLogs = useMemo(() => {
+    if (filter === "all") return logs;
+    return logs.filter((log) => (filter === "remote" ? log.source === "remote" : log.source === "button"));
+  }, [filter, logs]);
+
+  const filterButtonClass = (active: boolean) =>
+    active
+      ? `${secondaryButtonClass} border-white/25 bg-white/12 text-white`
+      : secondaryButtonClass;
+
+  if (!open) return null;
+
+  return (
+    <div className={dialogBackdropClass} role="presentation" onClick={onClose}>
+      <section
+        className={dialogShellClass}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Power event logs"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-white/8 px-4 py-4 sm:px-6">
+          <div>
+            <h2 className="font-display text-lg tracking-wide text-neutral-100">Event logs</h2>
+            <p className="text-sm text-neutral-500">Last 7 days from the database</p>
+          </div>
+          <button type="button" onClick={onClose} className={secondaryButtonClass}>
+            Close
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-3 border-b border-white/8 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => onFilterChange("all")} className={filterButtonClass(filter === "all")}>
+              All
+            </button>
+            <button type="button" onClick={() => onFilterChange("remote")} className={filterButtonClass(filter === "remote")}>
+              Remote
+            </button>
+            <button type="button" onClick={() => onFilterChange("button")} className={filterButtonClass(filter === "button")}>
+              Button
+            </button>
+          </div>
+          <p className="text-xs text-neutral-500">{filteredLogs.length} entries shown</p>
+        </div>
+
+        <div className="max-h-[70dvh] overflow-y-auto px-4 py-4 sm:px-6">
+          {loading && <p className="py-8 text-center text-sm text-neutral-500">Loading logs...</p>}
+          {!loading && error && <p className="py-8 text-center text-sm text-rose-300">{error}</p>}
+          {!loading && !error && filteredLogs.length === 0 && (
+            <p className="py-8 text-center text-sm text-neutral-500">No logs found for the selected filter.</p>
+          )}
+
+          {!loading && !error && filteredLogs.length > 0 && (
+            <div className="space-y-3">
+              {filteredLogs.map((log) => {
+                const isRemote = log.source === "remote";
+                const isOk = log.ok;
+                const actionText = isRemote
+                  ? `${log.holdMs ?? 0} ms power signal`
+                  : log.pressed
+                    ? "button pressed"
+                    : "button released";
+
+                return (
+                  <article key={log.id} className={`${panelClass} flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between`}>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <LogBadge tone={isRemote ? "amber" : "neutral"}>{log.source}</LogBadge>
+                        <LogBadge tone={isOk ? "green" : "red"}>{isOk ? "ok" : "error"}</LogBadge>
+                        {log.pressed !== null && <LogBadge tone={log.pressed ? "green" : "neutral"}>{log.pressed ? "press" : "release"}</LogBadge>}
+                      </div>
+                      <p className="text-sm text-neutral-100">{actionText}</p>
+                      {log.error && <p className="text-sm text-rose-300">{log.error}</p>}
+                    </div>
+
+                    <div className="text-left text-xs text-neutral-500 sm:text-right">
+                      <p>{new Date(log.createdAt).toLocaleString()}</p>
+                      {isRemote && log.holdMs !== null && <p>Hold: {Math.round(log.holdMs)} ms</p>}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function PowerPage() {
   const status = useDeviceStatus();
   const [pendingAction, setPendingAction] = useState<PowerMode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [logsOpen, setLogsOpen] = useState(false);
+  const [logs, setLogs] = useState<PowerEventLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState<string | null>(null);
+  const [logFilter, setLogFilter] = useState<LogFilter>("all");
 
   useEffect(() => {
     if (!error) return;
@@ -144,6 +274,35 @@ export default function PowerPage() {
       setError(null);
     }
   }, [error, secondsLeft]);
+
+  useEffect(() => {
+    if (!logsOpen) return;
+
+    let cancelled = false;
+    setLogsLoading(true);
+    setLogsError(null);
+
+    fetchPowerLogs()
+      .then((response) => {
+        if (!cancelled) {
+          setLogs(response.items);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLogsError(err instanceof Error ? err.message : "failed to load logs");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLogsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [logsOpen]);
 
   async function handlePress(mode: PowerMode) {
     setPendingAction(mode);
@@ -213,6 +372,12 @@ export default function PowerPage() {
           />
         </div>
 
+        <div className="flex justify-center">
+          <button type="button" onClick={() => setLogsOpen(true)} className={secondaryButtonClass}>
+            View logs
+          </button>
+        </div>
+
         <div className="flex h-10 flex-col items-center justify-start gap-1">
           <p className={`state-transition text-sm text-red-400 ${error ? "opacity-100" : "pointer-events-none opacity-0"}`}>
             {error ? `${error} (${secondsLeft})` : " "}
@@ -222,6 +387,16 @@ export default function PowerPage() {
           </p>
         </div>
       </section>
+
+      <LogsDialog
+        open={logsOpen}
+        onClose={() => setLogsOpen(false)}
+        logs={logs}
+        loading={logsLoading}
+        error={logsError}
+        filter={logFilter}
+        onFilterChange={setLogFilter}
+      />
     </main>
   );
 }

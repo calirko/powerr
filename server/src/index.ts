@@ -4,6 +4,7 @@ import { createBunWebSocket, serveStatic } from "hono/bun";
 import { getSignedCookie, setSignedCookie } from "hono/cookie";
 import type { ServerWebSocket } from "bun";
 import { deviceState } from "./device-state";
+import { prisma } from "./db";
 
 const { upgradeWebSocket, websocket } = createBunWebSocket<ServerWebSocket>();
 
@@ -53,6 +54,7 @@ const requireAuth: MiddlewareHandler = async (c, next) => {
 };
 
 app.use("/status", requireAuth);
+app.use("/logs", requireAuth);
 app.use("/power", requireAuth);
 
 app.post("/login", async (c) => {
@@ -75,6 +77,28 @@ app.post("/login", async (c) => {
 });
 
 app.get("/status", (c) => c.json(deviceState.getStatus()));
+
+app.get("/logs", async (c) => {
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const rows = await prisma.powerEvent.findMany({
+    where: { createdAt: { gte: since } },
+    orderBy: { createdAt: "desc" },
+    take: 250,
+  });
+
+  return c.json({
+    since: since.toISOString(),
+    items: rows.map((row) => ({
+      id: row.id,
+      source: row.source,
+      holdMs: row.holdMs,
+      pressed: row.pressed,
+      ok: row.ok,
+      error: row.error,
+      createdAt: row.createdAt.toISOString(),
+    })),
+  });
+});
 
 app.post("/power", async (c) => {
   let body: unknown = {};

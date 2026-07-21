@@ -20,3 +20,13 @@ export type DeviceStatus = {
   // Current HDD activity LED state as sampled by the firmware.
   hddLedOn: boolean | null;
 };
+
+export type PowerEventLog = {
+  id: number;
+  source: string;
+  holdMs: number | null;
+  pressed: boolean | null;
+  ok: boolean;
+  error: string | null;
+  createdAt: string;
+};

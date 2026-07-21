@@ -9,6 +9,21 @@ export class ApiError extends Error {
 
 export type PowerMode = "standard" | "force";
 
+export type PowerEventLog = {
+  id: number;
+  source: string;
+  holdMs: number | null;
+  pressed: boolean | null;
+  ok: boolean;
+  error: string | null;
+  createdAt: string;
+};
+
+export type PowerLogResponse = {
+  since: string;
+  items: PowerEventLog[];
+};
+
 export function statusWsUrl(): string {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${protocol}//${window.location.host}/ws/status`;
@@ -48,4 +63,20 @@ export async function login(password: string): Promise<void> {
 export async function checkSession(): Promise<boolean> {
   const res = await fetch("/status");
   return res.ok;
+}
+
+export async function fetchPowerLogs(): Promise<PowerLogResponse> {
+  const res = await fetch("/logs");
+
+  if (res.status === 401) {
+    window.location.replace("/login");
+    return { since: new Date().toISOString(), items: [] };
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `request failed with status ${res.status}`);
+  }
+
+  return (await res.json()) as PowerLogResponse;
 }

@@ -15,6 +15,15 @@ export const primaryButtonClass =
 export const dangerButtonClass =
   "rounded-2xl border border-rose-400/20 bg-gradient-to-b from-rose-500/20 to-rose-950/80 px-4 py-3 font-medium text-rose-100 shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition enabled:hover:border-rose-300/30 enabled:hover:brightness-110 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40";
 
+export const secondaryButtonClass =
+  "rounded-2xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-neutral-100 shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition enabled:hover:border-white/20 enabled:hover:bg-white/10 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40";
+
+export const dialogShellClass =
+  "relative w-full max-w-4xl overflow-hidden rounded-[2rem] border border-white/10 bg-neutral-950/95 shadow-[0_28px_100px_rgba(0,0,0,0.65)] backdrop-blur-xl";
+
+export const dialogBackdropClass =
+  "fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-3 backdrop-blur-sm sm:items-center sm:p-6";
+
 export const titleClass = "font-display text-2xl tracking-tight";
 
 export const subtitleClass = "max-w-md text-sm text-neutral-500";
