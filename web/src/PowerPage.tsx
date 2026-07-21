@@ -98,7 +98,9 @@ export default function PowerPage() {
         />
 
         {pending && (
-          <span className="animate-shimmer pointer-events-none absolute inset-y-0 left-0 w-1/2 rounded-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
+            <span className="animate-shimmer absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          </span>
         )}
 
         <span className="relative z-10 flex flex-col items-center gap-2 text-neutral-100">

@@ -10,9 +10,19 @@ WebSocketsClient webSocket;
 IPAddress pcHostIp;
 
 unsigned long lastHeartbeatAt = 0;
-unsigned long lastPcCheckAt = 0;
-bool pcPoweredOnKnown = false;
-bool lastPcPoweredOn = false;
+
+// PC-power state shared between the blocking ping task (core 0) and the main
+// loop (core 1), guarded by a spinlock. The ICMP probe is blocking (~3s when
+// the PC is up, ~7s when it's off), so it must never run on the Arduino loop
+// core or it starves webSocket.loop() and the heartbeat.
+portMUX_TYPE pcStateMux = portMUX_INITIALIZER_UNLOCKED;
+volatile bool pcPoweredOnKnown = false;
+volatile bool pcPoweredOn = false;
+
+// Main-task-only view of what we've last told the server, so we only emit a
+// pc_status message when the value actually changes.
+bool haveReportedPc = false;
+bool reportedPcPoweredOn = false;
 
 // Remote (server-issued) relay pulse, tracked non-blocking so it can run
 // alongside continuous button mirroring.
@@ -63,23 +73,48 @@ void reportPcStatus(bool poweredOn) {
   webSocket.sendTXT(out);
 }
 
-// Blocking ICMP probe of the motherboard's own NIC (PC_HOST_IP), separate
-// from this ESP32's own connectivity. When the PC is fully off there's no OS
-// to answer the ping, so no reply == powered off.
-void checkPcPower() {
-  unsigned long now = millis();
-  if (now - lastPcCheckAt < PC_PING_INTERVAL_MS) {
+// Blocking ICMP probe of the motherboard's own NIC (PC_HOST_IP), separate from
+// this ESP32's own connectivity. When the PC is fully off there's no OS to
+// answer the ping, so no reply == powered off. Runs as its own FreeRTOS task
+// pinned to core 0 (the Arduino loop runs on core 1) precisely because the
+// probe blocks for seconds; results go into shared state and the main loop
+// turns them into messages, since the WebSocket client is not thread-safe.
+void pcPingTask(void *param) {
+  for (;;) {
+    bool poweredOn = Ping.ping(pcHostIp, PC_PING_COUNT);
+    Serial.printf("pc ping %s: %s\n", pcHostIp.toString().c_str(), poweredOn ? "up" : "down");
+
+    portENTER_CRITICAL(&pcStateMux);
+    pcPoweredOnKnown = true;
+    pcPoweredOn = poweredOn;
+    portEXIT_CRITICAL(&pcStateMux);
+
+    vTaskDelay(pdMS_TO_TICKS(PC_PING_INTERVAL_MS));
+  }
+}
+
+// Main-loop side of the PC probe: push the latest state to the server when it
+// changes. On reconnect we resend unconditionally (haveReportedPc is cleared on
+// disconnect) because the server resets pc_status to null whenever the device
+// drops (see DeviceState.disconnect).
+void syncPcStatus() {
+  if (!webSocket.isConnected()) {
     return;
   }
-  lastPcCheckAt = now;
 
-  bool poweredOn = Ping.ping(pcHostIp, 1);
-  if (!pcPoweredOnKnown || poweredOn != lastPcPoweredOn) {
-    pcPoweredOnKnown = true;
-    lastPcPoweredOn = poweredOn;
-    if (webSocket.isConnected()) {
-      reportPcStatus(poweredOn);
-    }
+  bool known, poweredOn;
+  portENTER_CRITICAL(&pcStateMux);
+  known = pcPoweredOnKnown;
+  poweredOn = pcPoweredOn;
+  portEXIT_CRITICAL(&pcStateMux);
+
+  if (!known) {
+    return;
+  }
+  if (!haveReportedPc || poweredOn != reportedPcPoweredOn) {
+    haveReportedPc = true;
+    reportedPcPoweredOn = poweredOn;
+    reportPcStatus(poweredOn);
   }
 }
 
@@ -113,12 +148,13 @@ void onWebSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
     case WStype_CONNECTED:
       Serial.println("websocket connected");
-      if (pcPoweredOnKnown) {
-        reportPcStatus(lastPcPoweredOn);
-      }
+      // Force a resend of the current PC state on (re)connect; syncPcStatus()
+      // picks it up on the next loop iteration once isConnected() is true.
+      haveReportedPc = false;
       break;
     case WStype_DISCONNECTED:
       Serial.println("websocket disconnected");
+      haveReportedPc = false;
       break;
     case WStype_TEXT:
       handleMessage(payload, length);
@@ -160,6 +196,14 @@ void setup() {
   }
   webSocket.onEvent(onWebSocketEvent);
   webSocket.setReconnectInterval(RECONNECT_INTERVAL_MS);
+  // WS-level ping/pong so a half-open socket is detected even if the app-level
+  // heartbeat happens to be flowing; independent of the JSON "ping" the server
+  // uses for staleness tracking.
+  webSocket.enableHeartbeat(HEARTBEAT_INTERVAL_MS, WS_PONG_TIMEOUT_MS, WS_MISSED_PONGS_LIMIT);
+
+  // Blocking ICMP probe lives on core 0 so it can never stall webSocket.loop()
+  // (which runs on core 1 with the Arduino loop).
+  xTaskCreatePinnedToCore(pcPingTask, "pcPing", 4096, nullptr, 1, nullptr, 0);
 }
 
 void loop() {
@@ -179,7 +223,7 @@ void loop() {
 
   setRelay(buttonPressed || remotePulseActive);
 
-  checkPcPower();
+  syncPcStatus();
 
   unsigned long now = millis();
   if (now - lastHeartbeatAt >= HEARTBEAT_INTERVAL_MS) {
