@@ -176,7 +176,7 @@ app.get("/", async (c, next) => {
 app.use("/*", serveStatic({ root: "./public" }));
 app.get("/*", serveStatic({ path: "./public/index.html" }));
 
-const port = Number(process.env.PORT ?? 3000);
+const port = Number(process.env.PORT ?? 3050);
 console.log(`server listening on :${port}`);
 
 export default {

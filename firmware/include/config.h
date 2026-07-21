@@ -18,7 +18,7 @@
 #define WS_PATH "/ws"
 
 // How often we ping the server so it can tell we're still alive.
-#define HEARTBEAT_INTERVAL_MS 3000
+#define HEARTBEAT_INTERVAL_MS 3050
 // Reconnect backoff when the WS drops.
 #define RECONNECT_INTERVAL_MS 5000
 
