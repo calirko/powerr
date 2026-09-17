@@ -14,8 +14,13 @@ datasource db {
 
 model PowerEvent {
   id        Int      @id @default(autoincrement())
-  // "button" = physical case button pass-through, "remote" = triggered via POST /power
+  // Who/what the event is about: "button" = physical case button pass-through,
+  // "remote" = triggered via POST /power, "device" = the ESP32's link to the
+  // server, "pc" = the target machine's observed power state.
   source    String
+  // What happened within that source: "pulse" (remote), "press"/"release"
+  // (button), "connected"/"disconnected" (device), "on"/"off" (pc).
+  kind      String   @default("pulse")
   // Relay hold time in ms. For button events this is left null (duration is
   // however long the button was actually held, tracked by press/release pairs).
   holdMs    Int?

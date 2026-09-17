@@ -1,0 +1,12 @@
+// The favicon's power glyph without its background tile, so it inherits the surrounding text color.
+export default function Logo({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="30 21 112 126" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M85.3082 29V84.1025M120.508 54.3472C127.42 61.2741 132.129 70.0964 134.043 79.7014C135.956 89.3064 134.988 99.2639 131.26 108.318C127.532 117.373 121.212 125.118 113.095 130.579C104.979 136.039 95.4312 138.969 85.655 139C75.8789 139.03 66.3126 136.16 58.1625 130.751C50.0125 125.342 43.6437 117.636 39.8593 108.605C36.0748 99.5743 35.0443 89.6231 36.8977 80.0062C38.751 70.3894 43.4052 61.5378 50.2732 54.5676"
+        stroke="currentColor"
+        strokeWidth="16"
+      />
+    </svg>
+  );
+}

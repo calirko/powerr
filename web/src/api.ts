@@ -9,9 +9,41 @@ export class ApiError extends Error {
 
 export type PowerMode = "standard" | "force";
 
+// Mirrors DeviceInfo / PingSummary in server/src/types.ts.
+export type DeviceInfo = {
+  ssid: string;
+  rssi: number;
+  channel: number;
+  ip: string;
+  mac: string;
+  hostname: string;
+  uptimeMs: number;
+  freeHeapBytes: number;
+  heapSizeBytes: number;
+  chipModel: string;
+  chipCores: number;
+  cpuFreqMhz: number;
+  sdkVersion: string;
+  temperatureC: number;
+  reportedAt: string;
+};
+
+export type PingSummary = {
+  host: string | null;
+  intervalMs: number;
+  packetsPerCheck: number;
+  lastCheckedAt: string;
+  poweredOn: boolean;
+  sent: number;
+  received: number;
+  lossPercent: number;
+  replyMs: number | null;
+};
+
 export type PowerEventLog = {
   id: number;
   source: string;
+  kind: string;
   holdMs: number | null;
   pressed: boolean | null;
   ok: boolean;

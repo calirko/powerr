@@ -1,22 +1,22 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { toast } from "sonner";
 import { login } from "./api";
+import Logo from "./Logo";
 import { fieldClass, frameClass, pageShellClass, primaryButtonClass, subtitleClass, titleClass } from "./ui";
 
-export default function LoginPage() {
+export default function LoginPage({ onLoggedIn }: { onLoggedIn: () => void }) {
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setPending(true);
-    setError(null);
     try {
       await login(password);
-      window.location.href = "/";
+      onLoggedIn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "login failed");
+      toast.error(err instanceof Error ? err.message : "login failed");
       setPending(false);
     }
   }
@@ -25,7 +25,10 @@ export default function LoginPage() {
     <main className={pageShellClass}>
       <form onSubmit={handleSubmit} className={`${frameClass} w-full max-w-sm space-y-5`}>
         <div className="space-y-2 text-center">
-          <h1 className={titleClass}>powerr</h1>
+          <h1 className={`${titleClass} flex items-center justify-center gap-2.5`}>
+            <Logo className="size-6" />
+            powerr
+          </h1>
           <p className={subtitleClass}>Sign in to watch the device and power controls in one place.</p>
         </div>
 
@@ -37,8 +40,6 @@ export default function LoginPage() {
           placeholder="Password"
           className={fieldClass}
         />
-
-        {error && <p className="text-center text-sm text-red-400">{error}</p>}
 
         <button
           type="submit"

@@ -27,3 +27,6 @@ export const dialogBackdropClass =
 export const titleClass = "font-display text-2xl tracking-tight";
 
 export const subtitleClass = "max-w-md text-sm text-neutral-500";
+// Calm opacity transitions between screens (tw-animate-css, same utilities mkweb uses).
+export const screenEnterClass = "animate-in fade-in-0 duration-700 ease-out motion-reduce:animate-none";
+export const screenExitClass = "animate-out fade-out-0 duration-500 ease-in fill-mode-forwards motion-reduce:animate-none";

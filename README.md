@@ -9,13 +9,31 @@ on (probed by the ESP32 over the LAN).
 
 ## Structure
 
-- `firmware/` — ESP32 firmware (PlatformIO, Arduino framework). Mirrors the physical case button to
+- `firmware/`: ESP32 firmware (PlatformIO, Arduino framework). Mirrors the physical case button to
   the relay and listens for remote power commands.
-- `server/` — Bun + Hono + Prisma server. Holds the WebSocket connection to the ESP32, exposes
+- `server/`: Bun + Hono + Prisma server. Holds the WebSocket connection to the ESP32, exposes
   `/power` and `/status`/`/ws/status` for the frontend, and logs power events to SQLite.
-- `web/` — Vite + React + Tailwind frontend, built directly into `server/public`.
+- `web/`: Vite + React + Tailwind frontend, built directly into `server/public`.
 
-Each package has its own dependencies and is built/run independently — see each directory for setup.
+Each package has its own dependencies and is built/run independently; see each directory for setup.
+
+## Wiring
+
+Pins use the XIAO ESP32-S3's silkscreen labels; the GPIO numbers are what the ESP32 actually
+reports. Defined in `firmware/include/config.h`.
+
+| Label | GPIO | Signal | Mode | Active | Notes |
+| --- | --- | --- | --- | --- | --- |
+| D0 | 1 | — | — | — | Intentionally unused |
+| D1 | 2 | Relay | Output | High | Bridges the motherboard's power-switch header |
+| D2 | 3 | Case power button | `INPUT_PULLUP` | Low | Wired to GND; mirrored raw to the relay, no debounce |
+| D3 | 4 | Chassis power LED | `INPUT_PULLDOWN` | High | Read from the motherboard LED header through an optocoupler |
+| D4 | 5 | HDD activity LED | `INPUT_PULLDOWN` | High | Same optocoupler arrangement as D3 |
+| — | 21 | On-board user LED | Output | Low | Status indicator (`LED_BUILTIN`), see `firmware/include/status_led.h` |
+
+The relay is energized if *either* the case button is held *or* a remote pulse is active. The LED
+header inputs are read through optocouplers that switch 3V3 onto the GPIO, so they read HIGH while
+the corresponding LED is lit.
 
 ## Running
 

@@ -91,6 +91,7 @@ app.get("/logs", async (c) => {
     items: rows.map((row) => ({
       id: row.id,
       source: row.source,
+      kind: row.kind,
       holdMs: row.holdMs,
       pressed: row.pressed,
       ok: row.ok,

@@ -1,19 +1,34 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --popover: #131314;
+  --popover-foreground: #f3f5ff;
+  --border: rgba(243, 245, 255, 0.1);
+  --destructive: oklch(0.7559 0.0378 22.22);
+  --radius: 1rem;
+}
 
 @theme {
   --font-display: "Archivo Black", sans-serif;
   --font-sans: "Inter", sans-serif;
-  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
   --animate-glow: glow 2.6s ease-in-out infinite;
-}
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-150%) skewX(-12deg);
-  }
-  100% {
-    transform: translateX(350%) skewX(-12deg);
-  }
+  /* App palette: bg #060606 → fg #F3F5FF. The neutral scale is remapped onto that ramp
+     so every existing neutral-* / white utility follows the new colors. */
+  --color-white: #f3f5ff;
+  --color-black: #060606;
+  --color-neutral-50: #f3f5ff;
+  --color-neutral-100: #f3f5ff;
+  --color-neutral-200: #e3e5ee;
+  --color-neutral-300: #d2d3dc;
+  --color-neutral-400: #9ea0a6;
+  --color-neutral-500: #707175;
+  --color-neutral-600: #4f4f52;
+  --color-neutral-700: #3c3d3f;
+  --color-neutral-800: #222224;
+  --color-neutral-900: #131314;
+  --color-neutral-950: #060606;
 }
 
 @keyframes glow {
@@ -37,7 +52,7 @@ body,
 body {
   @apply bg-neutral-950 text-neutral-100 antialiased;
   font-family: var(--font-sans);
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(243, 245, 255, 0.08) 1px, transparent 1px);
   background-size: 24px 24px;
   background-position: -11px -11px;
 }
@@ -47,4 +62,132 @@ body {
   transition-property: color, background-color, border-color, box-shadow, opacity, transform;
   transition-duration: 500ms;
   transition-timing-function: ease;
+}
+
+.cn-toast[data-sonner-toast] {
+  box-shadow: none !important;
+}
+
+/* Dotted-background wave while a power command is in flight (adapted from hoppr's connect-blink).
+   The mask matches body's dot grid so the existing dots light up, sweeping up from the bottom and
+   back down on a loop until the command settles. Sits behind the page content so it glows through
+   the translucent card instead of over it. The wrapper owns the fade in/out so the wave itself can
+   keep looping uninterrupted while the overlay leaves. */
+.power-blink-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  animation: power-blink-fade-in 280ms ease-out forwards;
+}
+
+.power-blink-wrap[data-phase="ending"] {
+  animation: power-blink-fade-out 520ms ease-in forwards;
+}
+
+.power-blink-overlay {
+  --blink-color: var(--color-neutral-100);
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-size: 100% 0%;
+  background-image: linear-gradient(
+    to top,
+    color-mix(in oklch, var(--blink-color) 70%, transparent) 0%,
+    color-mix(in oklch, var(--blink-color) 45%, transparent) 40%,
+    color-mix(in oklch, var(--blink-color) 12%, transparent) 70%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 1px, transparent 1px);
+  mask-image: radial-gradient(circle, #000 1px, transparent 1px);
+  -webkit-mask-size: 24px 24px;
+  mask-size: 24px 24px;
+  -webkit-mask-position: -11px -11px;
+  mask-position: -11px -11px;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  animation: power-blink-wave 1600ms ease-in-out infinite;
+}
+
+/* --destructive is too desaturated to read as dots; use the force button's rose. */
+.power-blink-wrap[data-tone="danger"] .power-blink-overlay {
+  --blink-color: var(--color-rose-500);
+}
+
+@keyframes power-blink-wave {
+  0% {
+    background-size: 100% 0%;
+  }
+  50% {
+    background-size: 100% 80%;
+  }
+  100% {
+    background-size: 100% 0%;
+  }
+}
+
+@keyframes power-blink-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.9;
+  }
+}
+
+@keyframes power-blink-fade-out {
+  from {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .power-blink-wrap {
+    animation: none;
+    display: none;
+  }
+}
+
+/* In-button loading sweep, same dot vocabulary as the page background and the power wave: a soft
+   band of light travelling left-to-right through a dot grid instead of a gradient flash. */
+.dot-sweep {
+  --sweep-color: var(--color-neutral-100);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-size: 55% 100%;
+  background-image: linear-gradient(
+    to right,
+    transparent 0%,
+    color-mix(in oklch, var(--sweep-color) 45%, transparent) 50%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 1px, transparent 1px);
+  mask-image: radial-gradient(circle, #000 1px, transparent 1px);
+  -webkit-mask-size: 24px 24px;
+  mask-size: 24px 24px;
+  -webkit-mask-position: -11px -11px;
+  mask-position: -11px -11px;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  animation: dot-sweep 1600ms ease-in-out infinite;
+}
+
+.dot-sweep[data-tone="danger"] {
+  --sweep-color: var(--color-rose-400);
+}
+
+@keyframes dot-sweep {
+  0% {
+    background-position: -60% 0;
+  }
+  100% {
+    background-position: 160% 0;
+  }
 }

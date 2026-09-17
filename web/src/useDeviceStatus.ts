@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { statusWsUrl } from "./api";
+import { statusWsUrl, type DeviceInfo, type PingSummary } from "./api";
 
 export type DeviceStatus = {
   connected: boolean;
@@ -11,6 +11,10 @@ export type DeviceStatus = {
   ledOn: boolean | null;
   // Current HDD activity LED state as sampled by the firmware.
   hddLedOn: boolean | null;
+  // Board stats and last ping result; both null until reported and cleared
+  // again whenever the device drops.
+  device: DeviceInfo | null;
+  ping: PingSummary | null;
 };
 
 type StatusMessage = { type: "status" } & DeviceStatus;
@@ -24,6 +28,8 @@ export function useDeviceStatus(): DeviceStatus {
     pcPoweredOn: null,
     ledOn: null,
     hddLedOn: null,
+    device: null,
+    ping: null,
   });
 
   useEffect(() => {
@@ -43,6 +49,8 @@ export function useDeviceStatus(): DeviceStatus {
             pcPoweredOn: msg.pcPoweredOn,
             ledOn: msg.ledOn,
             hddLedOn: msg.hddLedOn,
+            device: msg.device,
+            ping: msg.ping,
           });
         }
       };

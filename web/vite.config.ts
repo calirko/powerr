@@ -13,7 +13,12 @@ export default defineConfig({
     proxy: {
       "/status": "http://localhost:3050",
       "/power": "http://localhost:3050",
-      "/login": "http://localhost:3050",
+      "/logs": "http://localhost:3050",
+      "/login": {
+        target: "http://localhost:3050",
+        // Page loads of /login must get Vite's index.html; only the POST goes to the server.
+        bypass: (req) => (req.method === "GET" ? "/index.html" : undefined),
+      },
       "/ws": { target: "ws://localhost:3050", ws: true },
     },
   },
