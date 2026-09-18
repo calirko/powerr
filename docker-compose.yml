@@ -10,6 +10,7 @@ services:
       DATABASE_URL: "file:/app/data/prod.db"
       AUTH_TOKEN: ${AUTH_TOKEN}
       UI_PASSWORD: ${UI_PASSWORD}
+      PC_HOST_IP: ${PC_HOST_IP}
     volumes:
       - powerr_data:/app/data
     networks:
